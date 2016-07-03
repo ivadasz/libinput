@@ -26,18 +26,14 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <dev/wscons/wsconsio.h>
+#include <sys/mouse.h>
 
 #include "libinput.h"
 #include "libinput-util.h"
 #include "libinput-private.h"
 
-
-static const char default_seat[] = "seat0";
-static const char default_seat_name[] = "default";
-
 static void
-wscons_process(struct libinput_device *device, struct wscons_event *wsevent)
+sysmouse_process(struct libinput_device *device, struct wscons_event *wsevent)
 {
 	enum libinput_button_state state;
 	struct normalized_coords accel;
@@ -101,8 +97,8 @@ wscons_process(struct libinput_device *device, struct wscons_event *wsevent)
 	}
 }
 
-static void
-wscons_device_dispatch(void *data)
+void
+sysmouse_device_dispatch(void *data)
 {
 	struct libinput_device *device = data;
 	struct wscons_event wsevents[32];
@@ -117,127 +113,4 @@ wscons_device_dispatch(void *data)
         for (i = 0; i < count; i++) {
 		wscons_process(device, &wsevents[i]);
 	}
-}
-
-static struct libinput_seat*
-wscons_seat_get(struct libinput *libinput, const char *seat_name_physical,
-	const char *seat_name_logical)
-{
-	struct libinput_seat *seat;
-
-	list_for_each(seat, &libinput->seat_list, link) {
-		if (streq(seat->physical_name, seat_name_physical) &&
-		    streq(seat->logical_name, seat_name_logical)) {
-			libinput_seat_ref(seat);
-			return seat;
-		}
-	}
-
-	seat = calloc(1, sizeof(*seat));
-	if (seat == NULL)
-		return NULL;
-
-	libinput_seat_init(seat, libinput, seat_name_physical,
-		seat_name_logical);
-
-	return seat;
-}
-
-struct libinput *
-libinput_udev_create_context(const struct libinput_interface *interface,
-	void *user_data, struct udev *udev)
-{
-	/*
-	 * We do not support udev, hence creating a context from udev will
-	 * fail.
-	 */
-	return NULL;
-}
-
-int
-libinput_udev_assign_seat(struct libinput *libinput, const char *seat_id)
-{
-	/* Multiseat and udev are not supported. */
-	return -1;
-}
-
-
-LIBINPUT_EXPORT struct libinput *
-libinput_path_create_context(const struct libinput_interface *interface,
-     void *user_data)
-{
-	struct libinput *libinput;
-
-	libinput = calloc(1, sizeof(*libinput));
-	if (libinput == NULL)
-		return NULL;
-
-	if (libinput_init(libinput, interface, user_data) != 0) {
-		free(libinput);
-		return NULL;
-	}
-
-	return libinput;
-}
-
-LIBINPUT_EXPORT struct libinput_device *
-libinput_path_add_device(struct libinput *libinput,
-	const char *path)
-{
-	struct libinput_seat *seat = NULL;
-	struct libinput_device *device;
-	int fd;
-
-	fd = open_restricted(libinput, path,
-			     O_RDWR | O_NONBLOCK | O_CLOEXEC);
-	if (fd < 0) {
-		log_info(libinput,
-			 "opening input device '%s' failed (%s).\n",
-			 path, strerror(-fd));
-		return NULL;
-	}
-
-	device = calloc(1, sizeof(*device));
-	if (device == NULL)
-		return NULL;
-
-	/* Only one (default) seat is supported. */
-	seat = wscons_seat_get(libinput, default_seat, default_seat_name);
-	if (seat == NULL)
-		goto err;
-
-	libinput_device_init(device, seat);
-
-	device->fd = fd;
-	device->devname = strdup(path);
-	if (device->devname == NULL)
-		goto err;
-
-	device->source =
-		libinput_add_fd(libinput, fd, wscons_device_dispatch, device);
-	if (!device->source)
-		goto err;
-
-	list_insert(&seat->devices_list, &device->link);
-
-	return device;
-
-err:
-	close_restricted(libinput, device->fd);
-	free(device);
-	return NULL;
-}
-
-LIBINPUT_EXPORT void
-libinput_path_remove_device(struct libinput_device *device)
-{
-	struct libinput *libinput = device->seat->libinput;
-
-	libinput_remove_source(libinput, device->source);
-	device->source = NULL;
-
-	close_restricted(libinput, device->fd);
-	device->fd = -1;
-
-	libinput_device_unref(device);
 }

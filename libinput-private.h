@@ -25,7 +25,7 @@
 #ifndef LIBINPUT_PRIVATE_H
 #define LIBINPUT_PRIVATE_H
 
-#include "linux/input.h"
+#include <linux/input.h>
 
 struct libinput_source;
 
@@ -88,6 +88,11 @@ struct libinput_seat {
 struct libinput_device_group {
 };
 
+enum devkind {
+	TTYKBD = 1,
+	SYSMOUSE
+};
+
 struct libinput_device {
 	struct libinput_seat *seat;
 	struct list link;
@@ -96,6 +101,7 @@ struct libinput_device {
 
 	struct libinput_source *source;
 	char *devname;
+	enum devkind kind;
 	int fd;
 };
 
