@@ -54,6 +54,7 @@ struct discrete_coords {
 
 struct libinput {
 	int kq;
+	struct udev *udev_ctx;
 	struct list source_destroy_list;
 
 	struct list seat_list;
@@ -102,6 +103,7 @@ struct libinput_device {
 	struct libinput_source *source;
 	char *devname;
 	enum devkind kind;
+	int sysmouse_oldmask;
 	int fd;
 };
 

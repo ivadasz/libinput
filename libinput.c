@@ -931,6 +931,8 @@ libinput_ref(struct libinput *libinput)
 	return libinput;
 }
 
+extern void dragonfly_libinput_destroy(struct libinput *libinput);
+
 LIBINPUT_EXPORT struct libinput *
 libinput_unref(struct libinput *libinput)
 {
@@ -962,6 +964,7 @@ libinput_unref(struct libinput *libinput)
 
 	libinput_drop_destroyed_sources(libinput);
 	close(libinput->kq);
+	dragonfly_libinput_destroy(libinput);
 	free(libinput);
 
 	return NULL;

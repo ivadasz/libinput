@@ -33,67 +33,60 @@
 #include "libinput-private.h"
 
 static void
-sysmouse_process(struct libinput_device *device, struct wscons_event *wsevent)
+sysmouse_process(struct libinput_device *device, uint8_t *pkt)
 {
 	enum libinput_button_state state;
 	struct normalized_coords accel;
 	struct device_float_coords raw;
+	struct timespec ts;
 	uint64_t time;
 	int button, key;
+	int xdelta, ydelta, zdelta;
+	int nm;
 
-	time = s2us(wsevent->time.tv_sec) + ns2us(wsevent->time.tv_nsec);
+	if ((pkt[0] & 0x80) == 0 || (pkt[7] & 0x80) != 0)
+		return;
 
-	switch (wsevent->type) {
-	case WSCONS_EVENT_KEY_UP:
-	case WSCONS_EVENT_KEY_DOWN:
-		key = wsevent->value;
-		if (wsevent->type == WSCONS_EVENT_KEY_UP)
-			state = LIBINPUT_KEY_STATE_RELEASED;
-		else
-			state = LIBINPUT_KEY_STATE_PRESSED;
-		keyboard_notify_key(device, time, key, state);
-		break;
+	xdelta = pkt[1] + pkt[3];
+	ydelta = pkt[2] + pkt[4];
+	ydelta = -ydelta;
+	zdelta = (pkt[5] > 0 && pkt[6] == 0) ?
+	    pkt[5] | 0x80 :
+	    pkt[5] + pkt[6];
 
-	case WSCONS_EVENT_MOUSE_UP:
-	case WSCONS_EVENT_MOUSE_DOWN:
-		/*
-		 * Do not return wscons(4) values directly because
-		 * the left button value being 0 it will be
-		 * interpreted as an error.
-		 */
-		button = wsevent->value + 1;
-		if (wsevent->type == WSCONS_EVENT_MOUSE_UP)
-			state = LIBINPUT_BUTTON_STATE_RELEASED;
-		else
-			state = LIBINPUT_BUTTON_STATE_PRESSED;
-		pointer_notify_button(device, time, button, state);
-		break;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	time = ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 
-	case WSCONS_EVENT_MOUSE_DELTA_X:
-	case WSCONS_EVENT_MOUSE_DELTA_Y:
+	/* XXX pointer_notify_axis missing */
+
+	if (xdelta != 0 || ydelta != 0) {
 		memset(&raw, 0, sizeof(raw));
 		memset(&accel, 0, sizeof(accel));
 
-		if (wsevent->type == WSCONS_EVENT_MOUSE_DELTA_X)
-			accel.x = wsevent->value;
-		else
-			accel.y = -wsevent->value;
+		accel.x = xdelta;
+		accel.y = -ydelta;
 
 		pointer_notify_motion(device, time, &accel, &raw);
-		break;
+	}
 
-	case WSCONS_EVENT_MOUSE_ABSOLUTE_X:
-	case WSCONS_EVENT_MOUSE_ABSOLUTE_Y:
-		//return LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE;
-
-	case WSCONS_EVENT_SYNC:
-		break;
-
-	case WSCONS_EVENT_MOUSE_ABSOLUTE_Z:
-	case WSCONS_EVENT_MOUSE_ABSOLUTE_W:
-		/* ignore those */
-	default:
-		assert(1 == 0);
+	nm = pkt[0] & 7;
+	if (nm != device->sysmouse_oldmask) {
+		if ((nm & 4) != (device->sysmouse_oldmask & 4)) {
+			pointer_notify_button(device, time, BTN_LEFT,
+			    (nm & 4) ? LIBINPUT_BUTTON_STATE_RELEASED
+				     : LIBINPUT_BUTTON_STATE_PRESSED);
+		}
+		if ((nm & 2) != (device->sysmouse_oldmask & 2)) {
+			pointer_notify_button(device, time, BTN_MIDDLE,
+			    (nm & 2) ? LIBINPUT_BUTTON_STATE_RELEASED
+				     : LIBINPUT_BUTTON_STATE_PRESSED);
+		}
+		if ((nm & 1) != (device->sysmouse_oldmask & 1)) {
+			pointer_notify_button(device, time, BTN_RIGHT,
+			    (nm & 1) ? LIBINPUT_BUTTON_STATE_RELEASED
+				     : LIBINPUT_BUTTON_STATE_PRESSED);
+		}
+		device->sysmouse_oldmask = nm;
 	}
 }
 
@@ -101,16 +94,16 @@ void
 sysmouse_device_dispatch(void *data)
 {
 	struct libinput_device *device = data;
-	struct wscons_event wsevents[32];
+	uint8_t pkts[128];
 	ssize_t len;
 	int count, i;
 
-	len = read(device->fd, wsevents, sizeof(struct wscons_event));
-	if (len <= 0 || (len % sizeof(struct wscons_event)) != 0)
+	len = read(device->fd, pkts, sizeof(pkts));
+	if (len <= 0 || (len % 8) != 0)
 		return;
 
-	count = len / sizeof(struct wscons_event);
+	count = len / 8;
         for (i = 0; i < count; i++) {
-		wscons_process(device, &wsevents[i]);
+		sysmouse_process(device, &pkts[i*8]);
 	}
 }

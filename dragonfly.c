@@ -22,9 +22,13 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
+
+#include <devattr.h>
+#include <sys/mouse.h>
 
 #include "libinput.h"
 #include "libinput-util.h"
@@ -63,6 +67,76 @@ dragonfly_seat_get(struct libinput *libinput, const char *seat_name_physical,
 	return seat;
 }
 
+static char *
+get_maj_min_driver(struct libinput *libinput, int major, int minor)
+{
+	struct udev_enumerate *enumerate;
+	struct udev_list_entry *current;
+	struct udev_device *dev;
+	prop_dictionary_t dict;
+	char buf1[16], buf2[16];
+	char *str = NULL;
+	int ret;
+
+	enumerate = udev_enumerate_new(libinput->udev_ctx);
+	if (enumerate == NULL) {
+		log_error(libinput, "udev_enumerate_new() failed (%s)\n",
+		    strerror(errno));
+		return NULL;
+	}
+
+	memset(buf1, 0, sizeof(buf1));
+	memset(buf2, 0, sizeof(buf2));
+	snprintf(buf1, 15, "%d", major);
+	snprintf(buf2, 15, "%d", minor);
+	udev_enumerate_add_match_expr(enumerate, "major", buf1);
+	udev_enumerate_add_match_expr(enumerate, "minor", buf2);
+
+	ret = udev_enumerate_scan_devices(enumerate);
+	if (ret == -1) {
+		log_error(libinput,
+		    "udev_enumerate_scan_devices failed (%s)\n",
+		    strerror(errno));
+		udev_enumerate_unref(enumerate);
+		return NULL;
+	}
+
+	current = udev_enumerate_get_list_entry(enumerate);
+	if (current == NULL) {
+		log_info(libinput, "No devices found via udev.\n");
+	} else {
+		udev_list_entry_foreach(current, current) {
+			dev = udev_list_entry_get_device(current);
+			if (dev == NULL)
+				continue;
+			dict = udev_device_get_dictionary(dev);
+			if (dict == NULL)
+				continue;
+			if (str != NULL) {
+				free(str);
+				break;
+			}
+			str = prop_string_cstring(prop_dictionary_get(dict,
+			    "driver"));
+			if (str == NULL)
+				break;
+			log_info(libinput,
+			    "major: %d, minor: %d for driver %s\n",
+			    major, minor, str);
+		}
+	}
+
+	udev_enumerate_unref(enumerate);
+
+	return str;
+}
+
+void
+dragonfly_libinput_destroy(struct libinput *libinput)
+{
+	udev_unref(libinput->udev_ctx);
+}
+
 struct libinput *
 libinput_udev_create_context(const struct libinput_interface *interface,
 	void *user_data, struct udev *udev)
@@ -97,6 +171,15 @@ libinput_path_create_context(const struct libinput_interface *interface,
 		return NULL;
 	}
 
+	libinput->udev_ctx = udev_new();
+	if (libinput->udev_ctx == NULL) {
+		log_error(libinput, "udev_new() failed (%s).\n",
+		    strerror(errno));
+		libinput_unref(libinput);
+		free(libinput);
+		return NULL;
+	}
+
 	return libinput;
 }
 
@@ -106,9 +189,12 @@ libinput_path_add_device(struct libinput *libinput,
 {
 	struct libinput_seat *seat = NULL;
 	struct libinput_device *device;
-	int fd;
+	int fd, level;
 
-	/* determine device kind (tty-keyboard or sysmouse) via devattr */
+	/* XXX use stat to get major/minor number for path */
+	/* XXX use get_maj_min_driver() to determine driver name */
+	/* XXX driver name "sc" ==> keyboard */
+	/* XXX driver name "sysmouse" ==> mouse */
 
 	fd = open_restricted(libinput, path,
 			     O_RDWR | O_NONBLOCK | O_CLOEXEC);
@@ -134,6 +220,9 @@ libinput_path_add_device(struct libinput *libinput,
 	device->devname = strdup(path);
 	if (device->devname == NULL)
 		goto err;
+
+	level = 1;
+	ioctl(fd, MOUSE_SETLEVEL, &level);
 
 	/* XXX set _dispatch method depending on device kind */
 	device->source =
