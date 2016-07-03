@@ -29,6 +29,7 @@
 
 #include <devattr.h>
 #include <sys/mouse.h>
+#include <sys/stat.h>
 
 #include "libinput.h"
 #include "libinput-util.h"
@@ -189,12 +190,37 @@ libinput_path_add_device(struct libinput *libinput,
 {
 	struct libinput_seat *seat = NULL;
 	struct libinput_device *device;
+	struct stat sb;
+	enum devkind kind;
+	char *driver;
 	int fd, level;
 
-	/* XXX use stat to get major/minor number for path */
-	/* XXX use get_maj_min_driver() to determine driver name */
-	/* XXX driver name "sc" ==> keyboard */
-	/* XXX driver name "sysmouse" ==> mouse */
+	if (stat(path, &sb) != 0) {
+		log_info(libinput,
+			 "stat for input device '%s' failed (%s).\n",
+			 path, strerror(errno));
+		return NULL;
+	}
+
+	driver = get_maj_min_driver(libinput, major(sb.st_rdev),
+	    minor(sb.st_rdev));
+	if (driver == NULL) {
+		log_error(libinput,
+			 "failed to get driver of input device '%s' (%s).\n",
+			 path, strerror(errno));
+		return NULL;
+	}
+	if (strcmp(driver, "sc") == 0) {
+		kind = TTYKBD;
+	} else if (strcmp(driver, "sysmouse") == 0) {
+		kind = SYSMOUSE;
+	} else {
+		log_error(libinput, "unsupported device driver \"%s\"\n",
+			  driver);
+		free(driver);
+		return NULL;
+	}
+	free(driver);
 
 	fd = open_restricted(libinput, path,
 			     O_RDWR | O_NONBLOCK | O_CLOEXEC);
@@ -223,12 +249,20 @@ libinput_path_add_device(struct libinput *libinput,
 
 	level = 1;
 	ioctl(fd, MOUSE_SETLEVEL, &level);
+	device->kind = kind;
 
 	/* XXX set _dispatch method depending on device kind */
-	device->source =
-		libinput_add_fd(libinput, fd, sysmouse_device_dispatch, device);
-	if (!device->source)
+	if (device->kind == SYSMOUSE) {
+		device->source =
+			libinput_add_fd(libinput, fd, sysmouse_device_dispatch,
+			    device);
+		if (!device->source)
+			goto err;
+	} else {
+		log_error(libinput, "unsupported device kind %d\n",
+			  device->kind);
 		goto err;
+	}
 
 	list_insert(&seat->devices_list, &device->link);
 
