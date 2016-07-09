@@ -299,7 +299,6 @@ libinput_event_get_touch_event(struct libinput_event *event)
 			   LIBINPUT_EVENT_TOUCH_MOTION,
 			   LIBINPUT_EVENT_TOUCH_CANCEL,
 			   LIBINPUT_EVENT_TOUCH_FRAME);
-
 	return (struct libinput_event_touch *) event;
 }
 
@@ -317,6 +316,33 @@ libinput_event_get_gesture_event(struct libinput_event *event)
 			   LIBINPUT_EVENT_GESTURE_PINCH_END);
 
 	return (struct libinput_event_gesture *) event;
+}
+
+LIBINPUT_EXPORT struct libinput_event_tablet_tool *
+libinput_event_get_tablet_tool_event(struct libinput_event *event)
+{
+	require_event_type(libinput_event_get_context(event),
+			   event->type,
+			   NULL,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON);
+
+	return (struct libinput_event_tablet_tool *) event;
+}
+
+LIBINPUT_EXPORT struct libinput_event_tablet_pad *
+libinput_event_get_tablet_pad_event(struct libinput_event *event)
+{
+	require_event_type(libinput_event_get_context(event),
+			   event->type,
+			   NULL,
+			   LIBINPUT_EVENT_TABLET_PAD_RING,
+			   LIBINPUT_EVENT_TABLET_PAD_STRIP,
+			   LIBINPUT_EVENT_TABLET_PAD_BUTTON);
+
+	return (struct libinput_event_tablet_pad *) event;
 }
 
 LIBINPUT_EXPORT struct libinput_event_device_notify *
@@ -956,8 +982,560 @@ libinput_event_gesture_get_angle_delta(struct libinput_event_gesture *event)
 			   LIBINPUT_EVENT_GESTURE_PINCH_UPDATE,
 			   LIBINPUT_EVENT_GESTURE_PINCH_END);
 
-	fprintf(stderr, "%s: partial stub\n", __func__);
 	return event->angle;
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_x_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_X);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_y_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_Y);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_pressure_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_PRESSURE);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_distance_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_DISTANCE);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_tilt_x_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_TILT_X);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_tilt_y_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_TILT_Y);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_rotation_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_ROTATION_Z);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_slider_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_SLIDER);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_wheel_has_changed(
+				struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return bit_is_set(event->changed_axes,
+			  LIBINPUT_TABLET_TOOL_AXIS_REL_WHEEL);
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_x(struct libinput_event_tablet_tool *event)
+{
+#if 0
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+#endif
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+#if 0
+	return evdev_convert_to_mm(device->abs.absinfo_x,
+				   event->axes.point.x);
+#else
+	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_y(struct libinput_event_tablet_tool *event)
+{
+#if 0
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+#endif
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+#if 0
+	return evdev_convert_to_mm(device->abs.absinfo_y,
+				   event->axes.point.y);
+#else
+	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_dx(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.delta.x;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_dy(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.delta.y;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_pressure(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.pressure;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_distance(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.distance;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_tilt_x(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.tilt.x;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_tilt_y(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.tilt.y;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_rotation(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.rotation;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_slider_position(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.slider;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_wheel_delta(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.wheel;
+}
+
+LIBINPUT_EXPORT int
+libinput_event_tablet_tool_get_wheel_delta_discrete(
+				      struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->axes.wheel_discrete;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_x_transformed(struct libinput_event_tablet_tool *event,
+					uint32_t width)
+{
+#if 0
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+#endif
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+#if 0
+	return evdev_device_transform_x(device,
+					event->axes.point.x,
+					width);
+#else
+	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT double
+libinput_event_tablet_tool_get_y_transformed(struct libinput_event_tablet_tool *event,
+					uint32_t height)
+{
+#if 0
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+#endif
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+#if 0
+	return evdev_device_transform_y(device,
+					event->axes.point.y,
+					height);
+#else
+	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT struct libinput_tablet_tool *
+libinput_event_tablet_tool_get_tool(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->tool;
+}
+
+LIBINPUT_EXPORT enum libinput_tablet_tool_proximity_state
+libinput_event_tablet_tool_get_proximity_state(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->proximity_state;
+}
+
+LIBINPUT_EXPORT enum libinput_tablet_tool_tip_state
+libinput_event_tablet_tool_get_tip_state(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->tip_state;
+}
+
+LIBINPUT_EXPORT uint32_t
+libinput_event_tablet_tool_get_time(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return us2ms(event->time);
+}
+
+LIBINPUT_EXPORT uint64_t
+libinput_event_tablet_tool_get_time_usec(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+			   LIBINPUT_EVENT_TABLET_TOOL_TIP,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+			   LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY);
+
+	return event->time;
+}
+
+LIBINPUT_EXPORT uint32_t
+libinput_event_tablet_tool_get_button(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON);
+
+	return event->button;
+}
+
+LIBINPUT_EXPORT enum libinput_button_state
+libinput_event_tablet_tool_get_button_state(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON);
+
+	return event->state;
+}
+
+LIBINPUT_EXPORT uint32_t
+libinput_event_tablet_tool_get_seat_button_count(struct libinput_event_tablet_tool *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TABLET_TOOL_BUTTON);
+
+	return event->seat_button_count;
+}
+
+LIBINPUT_EXPORT enum libinput_tablet_tool_type
+libinput_tablet_tool_get_type(struct libinput_tablet_tool *tool)
+{
+	return tool->type;
+}
+
+LIBINPUT_EXPORT uint64_t
+libinput_tablet_tool_get_tool_id(struct libinput_tablet_tool *tool)
+{
+	return tool->tool_id;
+}
+
+LIBINPUT_EXPORT int
+libinput_tablet_tool_is_unique(struct libinput_tablet_tool *tool)
+{
+	return tool->serial != 0;
+}
+
+LIBINPUT_EXPORT uint64_t
+libinput_tablet_tool_get_serial(struct libinput_tablet_tool *tool)
+{
+	return tool->serial;
+}
+
+LIBINPUT_EXPORT int
+libinput_tablet_tool_has_pressure(struct libinput_tablet_tool *tool)
+{
+	return bit_is_set(tool->axis_caps,
+			  LIBINPUT_TABLET_TOOL_AXIS_PRESSURE);
+}
+
+LIBINPUT_EXPORT int
+libinput_tablet_tool_has_distance(struct libinput_tablet_tool *tool)
+{
+	return bit_is_set(tool->axis_caps,
+			  LIBINPUT_TABLET_TOOL_AXIS_DISTANCE);
+}
+
+LIBINPUT_EXPORT int
+libinput_tablet_tool_has_tilt(struct libinput_tablet_tool *tool)
+{
+	return bit_is_set(tool->axis_caps,
+			  LIBINPUT_TABLET_TOOL_AXIS_TILT_X);
+}
+
+LIBINPUT_EXPORT int
+libinput_tablet_tool_has_rotation(struct libinput_tablet_tool *tool)
+{
+	return bit_is_set(tool->axis_caps,
+			  LIBINPUT_TABLET_TOOL_AXIS_ROTATION_Z);
+}
+
+LIBINPUT_EXPORT int
+libinput_tablet_tool_has_slider(struct libinput_tablet_tool *tool)
+{
+	return bit_is_set(tool->axis_caps,
+			  LIBINPUT_TABLET_TOOL_AXIS_SLIDER);
+}
+
+LIBINPUT_EXPORT int
+libinput_tablet_tool_has_wheel(struct libinput_tablet_tool *tool)
+{
+	return bit_is_set(tool->axis_caps,
+			  LIBINPUT_TABLET_TOOL_AXIS_REL_WHEEL);
+}
+
+LIBINPUT_EXPORT int
+libinput_tablet_tool_has_button(struct libinput_tablet_tool *tool,
+				uint32_t code)
+{
+	if (NCHARS(code) > sizeof(tool->buttons))
+		return 0;
+
+	return bit_is_set(tool->buttons, code);
 }
 
 struct libinput_source *
@@ -1223,13 +1801,13 @@ libinput_device_unref(struct libinput_device *device)
 	}
 }
 
-int
+LIBINPUT_EXPORT int
 libinput_get_fd(struct libinput *libinput)
 {
 	return libinput->kq;
 }
 
-int
+LIBINPUT_EXPORT int
 libinput_dispatch(struct libinput *libinput)
 {
 	struct libinput_source *source;
@@ -2136,7 +2714,7 @@ libinput_device_get_seat(struct libinput_device *device)
 
 LIBINPUT_EXPORT int
 libinput_device_set_seat_logical_name(struct libinput_device *device,
-	const char *name)
+				      const char *name)
 {
 	return -1;
 }
@@ -2149,13 +2727,13 @@ libinput_device_get_udev_device(struct libinput_device *device)
 
 LIBINPUT_EXPORT void
 libinput_device_led_update(struct libinput_device *device,
-	enum libinput_led leds)
+			   enum libinput_led leds)
 {
 }
 
 LIBINPUT_EXPORT int
 libinput_device_has_capability(struct libinput_device *device,
-       enum libinput_device_capability capability)
+			       enum libinput_device_capability capability)
 {
 	int rc = 0;
 
@@ -2179,7 +2757,8 @@ libinput_device_has_capability(struct libinput_device *device,
 
 LIBINPUT_EXPORT int
 libinput_device_get_size(struct libinput_device *device,
-	 double *width, double *height)
+			 double *width,
+			 double *height)
 {
 	fprintf(stderr, "%s: stub\n", __func__);
 	return (-1);
@@ -2195,8 +2774,41 @@ libinput_device_pointer_has_button(struct libinput_device *device, uint32_t code
 LIBINPUT_EXPORT int
 libinput_device_keyboard_has_key(struct libinput_device *device, uint32_t code)
 {
-	fprintf(stderr, "%s: stub\n", __func__);
-	return (-1);
+#if 0
+	return evdev_device_has_key((struct evdev_device *)device, code);
+#else
+	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT int
+libinput_device_tablet_pad_get_num_buttons(struct libinput_device *device)
+{
+#if 0
+	return evdev_device_tablet_pad_get_num_buttons((struct evdev_device *)device);
+#else
+	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT int
+libinput_device_tablet_pad_get_num_rings(struct libinput_device *device)
+{
+#if 0
+	return evdev_device_tablet_pad_get_num_rings((struct evdev_device *)device);
+#else
+	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT int
+libinput_device_tablet_pad_get_num_strips(struct libinput_device *device)
+{
+#if 0
+	return evdev_device_tablet_pad_get_num_strips((struct evdev_device *)device);
+#else
+	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT struct libinput_event *
@@ -2428,7 +3040,7 @@ libinput_config_status_to_str(enum libinput_config_status status)
 {
 	const char *str = NULL;
 
-	switch (status) {
+	switch(status) {
 	case LIBINPUT_CONFIG_STATUS_SUCCESS:
 		str = "Success";
 		break;
@@ -2451,7 +3063,7 @@ libinput_device_config_tap_get_finger_count(struct libinput_device *device)
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_tap_set_enabled(struct libinput_device *device,
-	enum libinput_config_tap_state enable)
+				       enum libinput_config_tap_state enable)
 {
 	return LIBINPUT_CONFIG_STATUS_INVALID;
 }
@@ -2470,7 +3082,7 @@ libinput_device_config_tap_get_default_enabled(struct libinput_device *device)
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_tap_set_drag_lock_enabled(struct libinput_device *device,
-	enum libinput_config_drag_lock_state enable)
+						 enum libinput_config_drag_lock_state enable)
 {
 	return LIBINPUT_CONFIG_STATUS_INVALID;
 }
@@ -2495,21 +3107,21 @@ libinput_device_config_calibration_has_matrix(struct libinput_device *device)
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_calibration_set_matrix(struct libinput_device *device,
-	const float matrix[6])
+					      const float matrix[6])
 {
 	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_calibration_get_matrix(struct libinput_device *device,
-	float matrix[6])
+					      float matrix[6])
 {
 	return 0;
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_calibration_get_default_matrix(struct libinput_device *device,
-	float matrix[6])
+						      float matrix[6])
 {
 	return 0;
 }
@@ -2522,7 +3134,7 @@ libinput_device_config_send_events_get_modes(struct libinput_device *device)
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_send_events_set_mode(struct libinput_device *device,
-	uint32_t mode)
+					    uint32_t mode)
 {
 	return LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
 }
@@ -2553,80 +3165,225 @@ libinput_device_config_accel_set_speed(struct libinput_device *device,
 	if (!(speed >= -1.0 && speed <= 1.0))
 		return LIBINPUT_CONFIG_STATUS_INVALID;
 
-	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
-}
+#if 0
+	if (!libinput_device_config_accel_is_available(device))
+		return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
 
+	return device->config.accel->set_speed(device, speed);
+#else
+	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+#endif
+}
 LIBINPUT_EXPORT double
 libinput_device_config_accel_get_speed(struct libinput_device *device)
 {
+#if 0
+	if (!libinput_device_config_accel_is_available(device))
+		return 0;
+
+	return device->config.accel->get_speed(device);
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT double
 libinput_device_config_accel_get_default_speed(struct libinput_device *device)
 {
+#if 0
+	if (!libinput_device_config_accel_is_available(device))
+		return 0;
+
+	return device->config.accel->get_default_speed(device);
+#else
 	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT uint32_t
+libinput_device_config_accel_get_profiles(struct libinput_device *device)
+{
+#if 0
+	if (!libinput_device_config_accel_is_available(device))
+		return 0;
+
+	return device->config.accel->get_profiles(device);
+#else
+	return 0;
+#endif
+}
+
+LIBINPUT_EXPORT enum libinput_config_accel_profile
+libinput_device_config_accel_get_profile(struct libinput_device *device)
+{
+#if 0
+	if (!libinput_device_config_accel_is_available(device))
+		return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
+
+	return device->config.accel->get_profile(device);
+#else
+	return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
+#endif
+}
+
+LIBINPUT_EXPORT enum libinput_config_accel_profile
+libinput_device_config_accel_get_default_profile(struct libinput_device *device)
+{
+#if 0
+	if (!libinput_device_config_accel_is_available(device))
+		return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
+
+	return device->config.accel->get_default_profile(device);
+#else
+	return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
+#endif
+}
+
+LIBINPUT_EXPORT enum libinput_config_status
+libinput_device_config_accel_set_profile(struct libinput_device *device,
+					 enum libinput_config_accel_profile profile)
+{
+	switch (profile) {
+	case LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT:
+	case LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE:
+		break;
+	default:
+		return LIBINPUT_CONFIG_STATUS_INVALID;
+	}
+
+#if 0
+	if (!libinput_device_config_accel_is_available(device) ||
+	    (libinput_device_config_accel_get_profiles(device) & profile) == 0)
+		return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+
+	return device->config.accel->set_profile(device, profile);
+#else
+	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+#endif
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_scroll_has_natural_scroll(struct libinput_device *device)
 {
+#if 0
+	if (!device->config.natural_scroll)
+		return 0;
+
+	return device->config.natural_scroll->has(device);
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_scroll_set_natural_scroll_enabled(struct libinput_device *device,
-	int enable)
+							 int enabled)
 {
+#if 0
+	if (!libinput_device_config_scroll_has_natural_scroll(device))
+		return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+
+	return device->config.natural_scroll->set_enabled(device, enabled);
+#else
 	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+#endif
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_scroll_get_natural_scroll_enabled(struct libinput_device *device)
 {
+#if 0
+	if (!device->config.natural_scroll)
+		return 0;
+
+	return device->config.natural_scroll->get_enabled(device);
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_scroll_get_default_natural_scroll_enabled(struct libinput_device *device)
 {
+#if 0
+	if (!device->config.natural_scroll)
+		return 0;
+
+	return device->config.natural_scroll->get_default_enabled(device);
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_left_handed_is_available(struct libinput_device *device)
 {
+#if 0
+	if (!device->config.left_handed)
+		return 0;
+
+	return device->config.left_handed->has(device);
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_left_handed_set(struct libinput_device *device,
-	int left_handed)
+				       int left_handed)
 {
+#if 0
+	if (!libinput_device_config_left_handed_is_available(device))
+		return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+
+	return device->config.left_handed->set(device, left_handed);
+#else
 	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+#endif
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_left_handed_get(struct libinput_device *device)
 {
+#if 0
+	if (!libinput_device_config_left_handed_is_available(device))
+		return 0;
+
+	return device->config.left_handed->get(device);
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_left_handed_get_default(struct libinput_device *device)
 {
+#if 0
+	if (!libinput_device_config_left_handed_is_available(device))
+		return 0;
+
+	return device->config.left_handed->get_default(device);
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT uint32_t
 libinput_device_config_click_get_methods(struct libinput_device *device)
 {
+#if 0
+	if (device->config.click_method)
+		return device->config.click_method->get_methods(device);
+	else
+		return 0;
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_click_set_method(struct libinput_device *device,
-	enum libinput_config_click_method method)
+					enum libinput_config_click_method method)
 {
 	/* Check method is a single valid method */
 	switch (method) {
@@ -2638,67 +3395,131 @@ libinput_device_config_click_set_method(struct libinput_device *device,
 		return LIBINPUT_CONFIG_STATUS_INVALID;
 	}
 
+#if 0
+	if ((libinput_device_config_click_get_methods(device) & method) != method)
+		return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+
+	if (device->config.click_method)
+		return device->config.click_method->set_method(device, method);
+	else /* method must be _NONE to get here */
+		return LIBINPUT_CONFIG_STATUS_SUCCESS;
+#else
 	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_click_method
 libinput_device_config_click_get_method(struct libinput_device *device)
 {
+#if 0
+	if (device->config.click_method)
+		return device->config.click_method->get_method(device);
+	else
+		return LIBINPUT_CONFIG_CLICK_METHOD_NONE;
+#else
 	return LIBINPUT_CONFIG_CLICK_METHOD_NONE;
+#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_click_method
 libinput_device_config_click_get_default_method(struct libinput_device *device)
 {
+#if 0
+	if (device->config.click_method)
+		return device->config.click_method->get_default_method(device);
+	else
+		return LIBINPUT_CONFIG_CLICK_METHOD_NONE;
+#else
 	return LIBINPUT_CONFIG_CLICK_METHOD_NONE;
+#endif
 }
 
 LIBINPUT_EXPORT int
 libinput_device_config_middle_emulation_is_available(
-	struct libinput_device *device)
+		struct libinput_device *device)
 {
+#if 0
+	if (device->config.middle_emulation)
+		return device->config.middle_emulation->available(device);
+	else
+		return LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+#else
 	return LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_middle_emulation_set_enabled(
-	struct libinput_device *device,
-	enum libinput_config_middle_emulation_state enable)
+		struct libinput_device *device,
+		enum libinput_config_middle_emulation_state enable)
 {
+	int available =
+		libinput_device_config_middle_emulation_is_available(device);
+
 	switch (enable) {
 	case LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED:
-		return LIBINPUT_CONFIG_STATUS_SUCCESS;
+		if (!available)
+			return LIBINPUT_CONFIG_STATUS_SUCCESS;
+		break;
 	case LIBINPUT_CONFIG_MIDDLE_EMULATION_ENABLED:
-		return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+		if (!available)
+			return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+		break;
 	default:
 		return LIBINPUT_CONFIG_STATUS_INVALID;
 	}
-}
 
+#if 0
+	return device->config.middle_emulation->set(device, enable);
+#else
+	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
+#endif
+}
 
 LIBINPUT_EXPORT enum libinput_config_middle_emulation_state
 libinput_device_config_middle_emulation_get_enabled(
-	struct libinput_device *device)
+		struct libinput_device *device)
 {
+	if (!libinput_device_config_middle_emulation_is_available(device))
+		return LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+
+#if 0
+	return device->config.middle_emulation->get(device);
+#else
 	return LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_middle_emulation_state
 libinput_device_config_middle_emulation_get_default_enabled(
-	struct libinput_device *device)
+		struct libinput_device *device)
 {
+	if (!libinput_device_config_middle_emulation_is_available(device))
+		return LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+
+#if 0
+	return device->config.middle_emulation->get_default(device);
+#else
 	return LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+#endif
 }
 
 LIBINPUT_EXPORT uint32_t
 libinput_device_config_scroll_get_methods(struct libinput_device *device)
 {
+#if 0
+	if (device->config.scroll_method)
+		return device->config.scroll_method->get_methods(device);
+	else
+		return 0;
+#else
 	return 0;
+#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_scroll_set_method(struct libinput_device *device,
-	enum libinput_config_scroll_method method)
+					 enum libinput_config_scroll_method method)
 {
 	/* Check method is a single valid method */
 	switch (method) {
@@ -2728,7 +3549,7 @@ libinput_device_config_scroll_get_default_method(struct libinput_device *device)
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_scroll_set_button(struct libinput_device *device,
-	uint32_t button)
+					 uint32_t button)
 {
 	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
 }
@@ -2753,7 +3574,7 @@ libinput_device_config_dwt_is_available(struct libinput_device *device)
 
 LIBINPUT_EXPORT enum libinput_config_status
 libinput_device_config_dwt_set_enabled(struct libinput_device *device,
-	enum libinput_config_dwt_state enable)
+				       enum libinput_config_dwt_state enable)
 {
 	if (enable != LIBINPUT_CONFIG_DWT_ENABLED &&
 	    enable != LIBINPUT_CONFIG_DWT_DISABLED)

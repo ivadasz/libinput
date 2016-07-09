@@ -57,6 +57,12 @@ struct tilt_degrees {
 	double x, y;
 };
 
+/* A threshold with an upper and lower limit */
+struct threshold {
+	int upper;
+	int lower;
+};
+
 struct tablet_axes {
 	struct device_coords point;
 	struct normalized_coords delta;
@@ -138,6 +144,22 @@ enum libinput_tablet_tool_axis {
 };
 
 #define LIBINPUT_TABLET_TOOL_AXIS_MAX LIBINPUT_TABLET_TOOL_AXIS_REL_WHEEL
+
+struct libinput_tablet_tool {
+	struct list link;
+	uint32_t serial;
+	uint32_t tool_id;
+	enum libinput_tablet_tool_type type;
+	unsigned char axis_caps[NCHARS(LIBINPUT_TABLET_TOOL_AXIS_MAX + 1)];
+	unsigned char buttons[NCHARS(KEY_MAX) + 1];
+	int refcount;
+	void *user_data;
+
+	/* The pressure threshold assumes a pressure_offset of 0 */
+	struct threshold pressure_threshold;
+	int pressure_offset; /* in device coordinates */
+	bool has_pressure_offset;
+};
 
 struct libinput_event {
 	enum libinput_event_type type;
