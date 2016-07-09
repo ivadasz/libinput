@@ -33,7 +33,7 @@
 #include "libinput-private.h"
 
 static void
-sysmouse_process(struct libinput_device *device, uint8_t *pkt)
+sysmouse_process(struct libinput_device *device, char *pkt)
 {
 	enum libinput_button_state state;
 	struct normalized_coords accel;
@@ -64,7 +64,7 @@ sysmouse_process(struct libinput_device *device, uint8_t *pkt)
 		memset(&accel, 0, sizeof(accel));
 
 		accel.x = xdelta;
-		accel.y = -ydelta;
+		accel.y = ydelta;
 
 		pointer_notify_motion(device, time, &accel, &raw);
 	}

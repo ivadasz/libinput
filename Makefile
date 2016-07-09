@@ -10,6 +10,8 @@ MANDIR=		${PREFIX}/man/man
 
 CFLAGS+=	-I${.CURDIR}
 CFLAGS+=	-I${PREFIX}/include
+LDADD+=		-z defs -ldevattr -lprop
+DPADD+=		${LIBDEVATTR} ${LIBPROP}
 INCS= 		libinput.h
 SRCS=		libinput.c libinput-util.c dragonfly.c sysmouse.c
 PKGCONFIG=	libinput.pc
