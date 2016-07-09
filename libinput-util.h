@@ -101,6 +101,8 @@ int list_empty(const struct list *list);
 #define streq(s1, s2) (strcmp((s1), (s2)) == 0)
 #define strneq(s1, s2, n) (strncmp((s1), (s2), (n)) == 0)
 
+#define NCHARS(x) ((size_t)(((x) + 7) / 8))
+
 #ifdef DEBUG_TRACE
 #define debug_trace(...) \
 	do { \

@@ -52,6 +52,24 @@ struct discrete_coords {
 	int x, y;
 };
 
+/* A pair of angles in degrees */
+struct tilt_degrees {
+	double x, y;
+};
+
+struct tablet_axes {
+	struct device_coords point;
+	struct normalized_coords delta;
+	double distance;
+	double pressure;
+	struct tilt_degrees tilt;
+	double rotation;
+	double slider;
+	double wheel;
+	int wheel_discrete;
+};
+
+
 struct libinput {
 	int kq;
 	struct udev *udev_ctx;
@@ -106,6 +124,20 @@ struct libinput_device {
 	int sysmouse_oldmask;
 	int fd;
 };
+
+enum libinput_tablet_tool_axis {
+	LIBINPUT_TABLET_TOOL_AXIS_X = 1,
+	LIBINPUT_TABLET_TOOL_AXIS_Y = 2,
+	LIBINPUT_TABLET_TOOL_AXIS_DISTANCE = 3,
+	LIBINPUT_TABLET_TOOL_AXIS_PRESSURE = 4,
+	LIBINPUT_TABLET_TOOL_AXIS_TILT_X = 5,
+	LIBINPUT_TABLET_TOOL_AXIS_TILT_Y = 6,
+	LIBINPUT_TABLET_TOOL_AXIS_ROTATION_Z = 7,
+	LIBINPUT_TABLET_TOOL_AXIS_SLIDER = 8,
+	LIBINPUT_TABLET_TOOL_AXIS_REL_WHEEL = 9,
+};
+
+#define LIBINPUT_TABLET_TOOL_AXIS_MAX LIBINPUT_TABLET_TOOL_AXIS_REL_WHEEL
 
 struct libinput_event {
 	enum libinput_event_type type;
