@@ -27,6 +27,8 @@
 
 #include <linux/input.h>
 
+#include <errno.h>
+
 struct libinput_source;
 
 /* A coordinate pair in device coordinates */
@@ -50,6 +52,11 @@ struct normalized_coords {
 /* A discrete step pair (mouse wheels) */
 struct discrete_coords {
 	int x, y;
+};
+
+/* A pair of coordinates normalized to a [0,1] or [-1, 1] range */
+struct normalized_range_coords {
+	double x, y;
 };
 
 /* A pair of angles in degrees */
@@ -241,9 +248,254 @@ pointer_notify_motion(struct libinput_device *device,
 		      const struct device_float_coords *raw);
 
 void
+pointer_notify_motion_absolute(struct libinput_device *device,
+			       uint64_t time,
+			       const struct device_coords *point);
+
+void
 pointer_notify_button(struct libinput_device *device,
 		      uint64_t time,
 		      int32_t button,
 		      enum libinput_button_state state);
+
+void
+pointer_notify_axis(struct libinput_device *device,
+		    uint64_t time,
+		    uint32_t axes,
+		    enum libinput_pointer_axis_source source,
+		    const struct normalized_coords *delta,
+		    const struct discrete_coords *discrete);
+
+void
+touch_notify_touch_down(struct libinput_device *device,
+			uint64_t time,
+			int32_t slot,
+			int32_t seat_slot,
+			const struct device_coords *point);
+
+void
+touch_notify_touch_motion(struct libinput_device *device,
+			  uint64_t time,
+			  int32_t slot,
+			  int32_t seat_slot,
+			  const struct device_coords *point);
+
+void
+touch_notify_touch_up(struct libinput_device *device,
+		      uint64_t time,
+		      int32_t slot,
+		      int32_t seat_slot);
+
+void
+gesture_notify_swipe(struct libinput_device *device,
+		     uint64_t time,
+		     enum libinput_event_type type,
+		     int finger_count,
+		     const struct normalized_coords *delta,
+		     const struct normalized_coords *unaccel);
+
+void
+gesture_notify_swipe_end(struct libinput_device *device,
+			 uint64_t time,
+			 int finger_count,
+			 int cancelled);
+
+void
+gesture_notify_pinch(struct libinput_device *device,
+		     uint64_t time,
+		     enum libinput_event_type type,
+		     int finger_count,
+		     const struct normalized_coords *delta,
+		     const struct normalized_coords *unaccel,
+		     double scale,
+		     double angle);
+
+void
+gesture_notify_pinch_end(struct libinput_device *device,
+			 uint64_t time,
+			 int finger_count,
+			 double scale,
+			 int cancelled);
+
+void
+touch_notify_frame(struct libinput_device *device,
+		   uint64_t time);
+
+void
+tablet_notify_axis(struct libinput_device *device,
+		   uint64_t time,
+		   struct libinput_tablet_tool *tool,
+		   enum libinput_tablet_tool_tip_state tip_state,
+		   unsigned char *changed_axes,
+		   const struct tablet_axes *axes);
+
+void
+tablet_notify_proximity(struct libinput_device *device,
+			uint64_t time,
+			struct libinput_tablet_tool *tool,
+			enum libinput_tablet_tool_proximity_state state,
+			unsigned char *changed_axes,
+			const struct tablet_axes *axes);
+
+void
+tablet_notify_tip(struct libinput_device *device,
+		  uint64_t time,
+		  struct libinput_tablet_tool *tool,
+		  enum libinput_tablet_tool_tip_state tip_state,
+		  unsigned char *changed_axes,
+		  const struct tablet_axes *axes);
+
+void
+tablet_notify_button(struct libinput_device *device,
+		     uint64_t time,
+		     struct libinput_tablet_tool *tool,
+		     enum libinput_tablet_tool_tip_state tip_state,
+		     const struct tablet_axes *axes,
+		     int32_t button,
+		     enum libinput_button_state state);
+
+void
+tablet_pad_notify_button(struct libinput_device *device,
+			 uint64_t time,
+			 int32_t button,
+			 enum libinput_button_state state);
+void
+tablet_pad_notify_ring(struct libinput_device *device,
+		       uint64_t time,
+		       unsigned int number,
+		       double value,
+		       enum libinput_tablet_pad_ring_axis_source source);
+void
+tablet_pad_notify_strip(struct libinput_device *device,
+			uint64_t time,
+			unsigned int number,
+			double value,
+			enum libinput_tablet_pad_strip_axis_source source);
+
+static inline uint64_t
+libinput_now(struct libinput *libinput)
+{
+	struct timespec ts = { 0, 0 };
+
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+		log_error(libinput, "clock_gettime failed: %s\n", strerror(errno));
+		return 0;
+	}
+
+	return s2us(ts.tv_sec) + ns2us(ts.tv_nsec);
+}
+
+static inline struct device_float_coords
+device_delta(struct device_coords a, struct device_coords b)
+{
+	struct device_float_coords delta;
+
+	delta.x = a.x - b.x;
+	delta.y = a.y - b.y;
+
+	return delta;
+}
+
+static inline struct device_float_coords
+device_average(struct device_coords a, struct device_coords b)
+{
+	struct device_float_coords average;
+
+	average.x = (a.x + b.x) / 2.0;
+	average.y = (a.y + b.y) / 2.0;
+
+	return average;
+}
+
+static inline struct device_float_coords
+device_float_delta(struct device_float_coords a, struct device_float_coords b)
+{
+	struct device_float_coords delta;
+
+	delta.x = a.x - b.x;
+	delta.y = a.y - b.y;
+
+	return delta;
+}
+
+static inline struct device_float_coords
+device_float_average(struct device_float_coords a, struct device_float_coords b)
+{
+	struct device_float_coords average;
+
+	average.x = (a.x + b.x) / 2.0;
+	average.y = (a.y + b.y) / 2.0;
+
+	return average;
+}
+
+static inline double
+normalized_length(struct normalized_coords norm)
+{
+	return hypot(norm.x, norm.y);
+}
+
+static inline int
+normalized_is_zero(struct normalized_coords norm)
+{
+	return norm.x == 0.0 && norm.y == 0.0;
+}
+
+enum directions {
+	N  = 1 << 0,
+	NE = 1 << 1,
+	E  = 1 << 2,
+	SE = 1 << 3,
+	S  = 1 << 4,
+	SW = 1 << 5,
+	W  = 1 << 6,
+	NW = 1 << 7,
+	UNDEFINED_DIRECTION = 0xff
+};
+
+static inline int
+normalized_get_direction(struct normalized_coords norm)
+{
+	int dir = UNDEFINED_DIRECTION;
+	int d1, d2;
+	double r;
+
+	if (fabs(norm.x) < 2.0 && fabs(norm.y) < 2.0) {
+		if (norm.x > 0.0 && norm.y > 0.0)
+			dir = S | SE | E;
+		else if (norm.x > 0.0 && norm.y < 0.0)
+			dir = N | NE | E;
+		else if (norm.x < 0.0 && norm.y > 0.0)
+			dir = S | SW | W;
+		else if (norm.x < 0.0 && norm.y < 0.0)
+			dir = N | NW | W;
+		else if (norm.x > 0.0)
+			dir = NE | E | SE;
+		else if (norm.x < 0.0)
+			dir = NW | W | SW;
+		else if (norm.y > 0.0)
+			dir = SE | S | SW;
+		else if (norm.y < 0.0)
+			dir = NE | N | NW;
+	} else {
+		/* Calculate r within the interval  [0 to 8)
+		 *
+		 * r = [0 .. 2π] where 0 is North
+		 * d_f = r / 2π  ([0 .. 1))
+		 * d_8 = 8 * d_f
+		 */
+		r = atan2(norm.y, norm.x);
+		r = fmod(r + 2.5*M_PI, 2*M_PI);
+		r *= 4*M_1_PI;
+
+		/* Mark one or two close enough octants */
+		d1 = (int)(r + 0.9) % 8;
+		d2 = (int)(r + 0.1) % 8;
+
+		dir = (1 << d1) | (1 << d2);
+	}
+
+	return dir;
+}
 
 #endif /* LIBINPUT_PRIVATE_H */

@@ -37,6 +37,7 @@ sysmouse_process(struct libinput_device *device, char *pkt)
 {
 	enum libinput_button_state state;
 	struct normalized_coords accel;
+	struct discrete_coords disc;
 	struct device_float_coords raw;
 	struct timespec ts;
 	uint64_t time;
@@ -51,13 +52,23 @@ sysmouse_process(struct libinput_device *device, char *pkt)
 	ydelta = pkt[2] + pkt[4];
 	ydelta = -ydelta;
 	zdelta = (pkt[5] > 0 && pkt[6] == 0) ?
-	    pkt[5] | 0x80 :
+	    (char)(pkt[5] | 0x80) :
 	    pkt[5] + pkt[6];
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	time = ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 
-	/* XXX pointer_notify_axis missing */
+	if (zdelta != 0) {
+		memset(&disc, 0, sizeof(disc));
+		memset(&accel, 0, sizeof(accel));
+
+		accel.y = zdelta;
+		disc.y = zdelta;
+
+		pointer_notify_axis(device, time,
+		    AS_MASK(LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL),
+		    LIBINPUT_POINTER_AXIS_SOURCE_WHEEL, &accel, &disc);
+	}
 
 	if (xdelta != 0 || ydelta != 0) {
 		memset(&raw, 0, sizeof(raw));

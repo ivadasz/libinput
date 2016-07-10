@@ -2739,7 +2739,7 @@ libinput_device_has_capability(struct libinput_device *device,
 
 	switch (capability) {
 	case LIBINPUT_DEVICE_CAP_POINTER:
-		if (strcmp(device->devname, "/dev/sysmouse") == 0)
+		if (device->kind == SYSMOUSE)
 			rc = 1;
 		break;
 	case LIBINPUT_DEVICE_CAP_KEYBOARD:
