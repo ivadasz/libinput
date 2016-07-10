@@ -2725,12 +2725,6 @@ libinput_device_get_udev_device(struct libinput_device *device)
 	return NULL;
 }
 
-LIBINPUT_EXPORT void
-libinput_device_led_update(struct libinput_device *device,
-			   enum libinput_led leds)
-{
-}
-
 LIBINPUT_EXPORT int
 libinput_device_has_capability(struct libinput_device *device,
 			       enum libinput_device_capability capability)

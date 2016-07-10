@@ -302,3 +302,24 @@ libinput_path_remove_device(struct libinput_device *device)
 
 	libinput_device_unref(device);
 }
+
+
+LIBINPUT_EXPORT void
+libinput_device_led_update(struct libinput_device *device,
+	enum libinput_led leds)
+{
+	if (device->kind == TTYKBD) {
+		int mask = 0;
+		/*
+		 * XXX We could directly use leds as mask, but this should
+		 *     be better for future proofing the code.
+		 */
+		if (leds & LIBINPUT_LED_NUM_LOCK)
+			mask |= (1 << 0);
+		if (leds & LIBINPUT_LED_CAPS_LOCK)
+			mask |= (1 << 1);
+		if (leds & LIBINPUT_LED_SCROLL_LOCK)
+			mask |= (1 << 2);
+		kbdev_set_leds(device->kbdst, mask);
+	}
+}
