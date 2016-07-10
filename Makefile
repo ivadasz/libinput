@@ -14,6 +14,7 @@ LDADD+=		-z defs -ldevattr -lprop
 DPADD+=		${LIBDEVATTR} ${LIBPROP}
 INCS= 		libinput.h
 SRCS=		libinput.c libinput-util.c dragonfly.c sysmouse.c keyboard.c
+SRCS+=		kbdev.c
 PKGCONFIG=	libinput.pc
 
 LINUX_INCS=	input.h

@@ -134,7 +134,10 @@ struct libinput_device {
 	struct libinput_source *source;
 	char *devname;
 	enum devkind kind;
-	int sysmouse_oldmask;
+	union {
+		int sysmouse_oldmask;
+		struct kbdev_state *kbdst;
+	};
 	int fd;
 };
 

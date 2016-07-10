@@ -31,6 +31,7 @@
 #include <sys/mouse.h>
 #include <sys/stat.h>
 
+#include "kbdev.h"
 #include "libinput.h"
 #include "libinput-util.h"
 #include "libinput-private.h"
@@ -248,22 +249,27 @@ libinput_path_add_device(struct libinput *libinput,
 	if (device->devname == NULL)
 		goto err;
 
-	level = 1;
-	ioctl(fd, MOUSE_SETLEVEL, &level);
 	device->kind = kind;
 
 	if (device->kind == SYSMOUSE) {
+		level = 1;
+		ioctl(fd, MOUSE_SETLEVEL, &level);
 		device->source =
 			libinput_add_fd(libinput, fd, sysmouse_device_dispatch,
 			    device);
 		if (!device->source)
 			goto err;
 	} else if (device->kind == TTYKBD) {
+		device->kbdst = kbdev_new_state(fd);
+		if (device->kbdst == NULL)
+			goto err;
 		device->source =
 			libinput_add_fd(libinput, fd, keyboard_device_dispatch,
 			    device);
-		if (!device->source)
+		if (!device->source) {
+			kbdev_destroy_state(device->kbdst);
 			goto err;
+		}
 	} else {
 		log_error(libinput, "unsupported device kind %d\n",
 			  device->kind);
@@ -287,6 +293,9 @@ libinput_path_remove_device(struct libinput_device *device)
 
 	libinput_remove_source(libinput, device->source);
 	device->source = NULL;
+
+	if (device->kind == TTYKBD)
+		kbdev_destroy_state(device->kbdst);
 
 	close_restricted(libinput, device->fd);
 	device->fd = -1;

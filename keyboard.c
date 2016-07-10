@@ -28,33 +28,30 @@
 
 #include <sys/mouse.h>
 
+#include "kbdev.h"
 #include "libinput.h"
 #include "libinput-util.h"
 #include "libinput-private.h"
-
-static void
-keyboard_process(struct libinput_device *device, uint8_t byte)
-{
-	enum libinput_key_state state;
-	struct timespec ts;
-	uint64_t time;
-	int key;
-
-	/* XXX */
-}
 
 void
 keyboard_device_dispatch(void *data)
 {
 	struct libinput_device *device = data;
-	uint8_t buf[128];
-	ssize_t len;
-	int i;
+	struct kbdev_event evs[64];
+	struct timespec ts;
+	uint64_t time;
+	int i, n;
 
-	len = read(device->fd, buf, sizeof(buf));
-	if (len <= 0)
+	n = kbdev_read_events(device->kbdst, evs, 64);
+	if (n <= 0)
 		return;
 
-        for (i = 0; i < len; i++)
-		keyboard_process(device, buf[i]);
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        time = ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+
+	for (i = 0; i < n; i++) {
+		keyboard_notify_key(device, time, evs[i].keycode,
+		    evs[i].pressed ? LIBINPUT_KEY_STATE_PRESSED
+				   : LIBINPUT_KEY_STATE_RELEASED);
+	}
 }
