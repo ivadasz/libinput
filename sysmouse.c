@@ -41,7 +41,7 @@ sysmouse_process(struct libinput_device *device, char *pkt)
 	struct device_float_coords raw;
 	struct timespec ts;
 	uint64_t time;
-	int button, key;
+	int button;
 	int xdelta, ydelta, zdelta;
 	int nm;
 
@@ -114,7 +114,6 @@ sysmouse_device_dispatch(void *data)
 		return;
 
 	count = len / 8;
-        for (i = 0; i < count; i++) {
+        for (i = 0; i < count; i++)
 		sysmouse_process(device, &pkts[i*8]);
-	}
 }
