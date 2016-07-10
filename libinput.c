@@ -2743,10 +2743,8 @@ libinput_device_has_capability(struct libinput_device *device,
 			rc = 1;
 		break;
 	case LIBINPUT_DEVICE_CAP_KEYBOARD:
-#if 0
-		if (strcmp(device->devname, "/dev/wskbd") == 0)
+		if (device->kind == TTYKBD)
 			rc = 1;
-#endif
 		break;
 	case LIBINPUT_DEVICE_CAP_TOUCH:
 	case LIBINPUT_DEVICE_CAP_GESTURE:

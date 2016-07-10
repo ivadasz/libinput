@@ -39,6 +39,7 @@ extern void	libinput_seat_init(struct libinput_seat *seat,
 		    struct libinput *libinput, const char *physical_name,
 		    const char *logical_name);
 extern void	sysmouse_device_dispatch(void *data);
+extern void	keyboard_device_dispatch(void *data);
 
 
 static const char default_seat[] = "seat0";
@@ -251,10 +252,15 @@ libinput_path_add_device(struct libinput *libinput,
 	ioctl(fd, MOUSE_SETLEVEL, &level);
 	device->kind = kind;
 
-	/* XXX set _dispatch method depending on device kind */
 	if (device->kind == SYSMOUSE) {
 		device->source =
 			libinput_add_fd(libinput, fd, sysmouse_device_dispatch,
+			    device);
+		if (!device->source)
+			goto err;
+	} else if (device->kind == TTYKBD) {
+		device->source =
+			libinput_add_fd(libinput, fd, keyboard_device_dispatch,
 			    device);
 		if (!device->source)
 			goto err;

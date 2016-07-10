@@ -13,7 +13,7 @@ CFLAGS+=	-I${PREFIX}/include
 LDADD+=		-z defs -ldevattr -lprop
 DPADD+=		${LIBDEVATTR} ${LIBPROP}
 INCS= 		libinput.h
-SRCS=		libinput.c libinput-util.c dragonfly.c sysmouse.c
+SRCS=		libinput.c libinput-util.c dragonfly.c sysmouse.c keyboard.c
 PKGCONFIG=	libinput.pc
 
 LINUX_INCS=	input.h
