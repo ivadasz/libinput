@@ -34,6 +34,7 @@
 #include "kbdev.h"
 #include "libinput.h"
 #include "libinput-util.h"
+#include "filter.h"
 #include "libinput-private.h"
 
 extern void	libinput_seat_init(struct libinput_seat *seat,
@@ -186,6 +187,10 @@ libinput_path_create_context(const struct libinput_interface *interface,
 	return libinput;
 }
 
+extern struct libinput_device_config_accel sysmouse_accel;
+extern int sysmouse_init_accel(struct libinput_device *device,
+			       enum libinput_config_accel_profile which);
+
 LIBINPUT_EXPORT struct libinput_device *
 libinput_path_add_device(struct libinput *libinput,
 	const char *path)
@@ -259,6 +264,14 @@ libinput_path_add_device(struct libinput *libinput,
 			    device);
 		if (!device->source)
 			goto err;
+		if (sysmouse_init_accel(device,
+		    LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE) == -1) {
+			log_error(libinput,
+				  "failed to initialize pointer acceleration for %s\n",
+				  device->devname);
+			libinput_remove_source(libinput, device->source);
+			goto err;
+		}
 	} else if (device->kind == TTYKBD) {
 		device->kbdst = kbdev_new_state(fd);
 		if (device->kbdst == NULL)
@@ -282,6 +295,7 @@ libinput_path_add_device(struct libinput *libinput,
 
 err:
 	close_restricted(libinput, device->fd);
+	free(device->devname);
 	free(device);
 	return NULL;
 }
@@ -293,6 +307,9 @@ libinput_path_remove_device(struct libinput_device *device)
 
 	libinput_remove_source(libinput, device->source);
 	device->source = NULL;
+
+	if (device->kind == SYSMOUSE)
+		filter_destroy(device->filter);
 
 	if (device->kind == TTYKBD)
 		kbdev_destroy_state(device->kbdst);

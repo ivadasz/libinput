@@ -1538,6 +1538,40 @@ libinput_tablet_tool_has_button(struct libinput_tablet_tool *tool,
 	return bit_is_set(tool->buttons, code);
 }
 
+LIBINPUT_EXPORT void
+libinput_tablet_tool_set_user_data(struct libinput_tablet_tool *tool,
+				   void *user_data)
+{
+	tool->user_data = user_data;
+}
+
+LIBINPUT_EXPORT void *
+libinput_tablet_tool_get_user_data(struct libinput_tablet_tool *tool)
+{
+	return tool->user_data;
+}
+
+LIBINPUT_EXPORT struct libinput_tablet_tool *
+libinput_tablet_tool_ref(struct libinput_tablet_tool *tool)
+{
+	tool->refcount++;
+	return tool;
+}
+
+LIBINPUT_EXPORT struct libinput_tablet_tool *
+libinput_tablet_tool_unref(struct libinput_tablet_tool *tool)
+{
+	assert(tool->refcount > 0);
+
+	tool->refcount--;
+	if (tool->refcount > 0)
+		return tool;
+
+	list_remove(&tool->link);
+	free(tool);
+	return NULL;
+}
+
 struct libinput_source *
 libinput_add_fd(struct libinput *libinput,
 		int fd,
@@ -1599,6 +1633,7 @@ libinput_init(struct libinput *libinput,
 	libinput->refcount = 1;
 	list_init(&libinput->source_destroy_list);
 	list_init(&libinput->seat_list);
+	list_init(&libinput->tool_list);
 
 	return 0;
 }
@@ -1634,6 +1669,7 @@ libinput_unref(struct libinput *libinput)
 	struct libinput_event *event;
 	struct libinput_device *device, *next_device;
 	struct libinput_seat *seat, *next_seat;
+	struct libinput_tablet_tool *tool, *next_tool;
 
 	if (libinput == NULL)
 		return NULL;
@@ -1657,6 +1693,9 @@ libinput_unref(struct libinput *libinput)
 		libinput_seat_destroy(seat);
 	}
 
+	list_for_each_safe(tool, next_tool, &libinput->tool_list, link) {
+		libinput_tablet_tool_unref(tool);
+	}
 	libinput_drop_destroyed_sources(libinput);
 	close(libinput->kq);
 	dragonfly_libinput_destroy(libinput);
@@ -3148,10 +3187,8 @@ libinput_device_config_send_events_get_default_mode(struct libinput_device *devi
 LIBINPUT_EXPORT int
 libinput_device_config_accel_is_available(struct libinput_device *device)
 {
-	if (device->kind == SYSMOUSE))
-		return 1;
-	else
-		return 0;
+	return device->config.accel ?
+		device->config.accel->available(device) : 0;
 }
 
 LIBINPUT_EXPORT enum libinput_config_status
@@ -3162,78 +3199,54 @@ libinput_device_config_accel_set_speed(struct libinput_device *device,
 	if (!(speed >= -1.0 && speed <= 1.0))
 		return LIBINPUT_CONFIG_STATUS_INVALID;
 
-#if 0
 	if (!libinput_device_config_accel_is_available(device))
 		return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
 
 	return device->config.accel->set_speed(device, speed);
-#else
-	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
-#endif
 }
 LIBINPUT_EXPORT double
 libinput_device_config_accel_get_speed(struct libinput_device *device)
 {
-#if 0
 	if (!libinput_device_config_accel_is_available(device))
 		return 0;
 
 	return device->config.accel->get_speed(device);
-#else
-	return 0;
-#endif
 }
 
 LIBINPUT_EXPORT double
 libinput_device_config_accel_get_default_speed(struct libinput_device *device)
 {
-#if 0
 	if (!libinput_device_config_accel_is_available(device))
 		return 0;
 
 	return device->config.accel->get_default_speed(device);
-#else
-	return 0;
-#endif
 }
 
 LIBINPUT_EXPORT uint32_t
 libinput_device_config_accel_get_profiles(struct libinput_device *device)
 {
-#if 0
 	if (!libinput_device_config_accel_is_available(device))
 		return 0;
 
 	return device->config.accel->get_profiles(device);
-#else
-	return 0;
-#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_accel_profile
 libinput_device_config_accel_get_profile(struct libinput_device *device)
 {
-#if 0
 	if (!libinput_device_config_accel_is_available(device))
 		return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
 
 	return device->config.accel->get_profile(device);
-#else
-	return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
-#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_accel_profile
 libinput_device_config_accel_get_default_profile(struct libinput_device *device)
 {
-#if 0
 	if (!libinput_device_config_accel_is_available(device))
 		return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
 
 	return device->config.accel->get_default_profile(device);
-#else
-	return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
-#endif
 }
 
 LIBINPUT_EXPORT enum libinput_config_status
@@ -3248,15 +3261,11 @@ libinput_device_config_accel_set_profile(struct libinput_device *device,
 		return LIBINPUT_CONFIG_STATUS_INVALID;
 	}
 
-#if 0
 	if (!libinput_device_config_accel_is_available(device) ||
 	    (libinput_device_config_accel_get_profiles(device) & profile) == 0)
 		return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
 
 	return device->config.accel->set_profile(device, profile);
-#else
-	return LIBINPUT_CONFIG_STATUS_UNSUPPORTED;
-#endif
 }
 
 LIBINPUT_EXPORT int

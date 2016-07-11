@@ -96,6 +96,8 @@ struct libinput {
 	size_t events_in;
 	size_t events_out;
 
+	struct list tool_list;
+
 	const struct libinput_interface *interface;
 
 	libinput_log_handler log_handler;
@@ -115,6 +117,33 @@ struct libinput_seat {
 	char *logical_name;
 
 	uint32_t button_count[KEY_CNT];
+};
+
+struct libinput_device_config {
+	struct libinput_device_config_tap *tap;
+	struct libinput_device_config_calibration *calibration;
+	struct libinput_device_config_send_events *sendevents;
+	struct libinput_device_config_accel *accel;
+	struct libinput_device_config_natural_scroll *natural_scroll;
+	struct libinput_device_config_left_handed *left_handed;
+	struct libinput_device_config_scroll_method *scroll_method;
+	struct libinput_device_config_click_method *click_method;
+	struct libinput_device_config_middle_emulation *middle_emulation;
+	struct libinput_device_config_dwt *dwt;
+};
+
+struct libinput_device_config_accel {
+	int (*available)(struct libinput_device *device);
+	enum libinput_config_status (*set_speed)(struct libinput_device *device,
+						 double speed);
+	double (*get_speed)(struct libinput_device *device);
+	double (*get_default_speed)(struct libinput_device *device);
+
+	uint32_t (*get_profiles)(struct libinput_device *device);
+	enum libinput_config_status (*set_profile)(struct libinput_device *device,
+						   enum libinput_config_accel_profile);
+	enum libinput_config_accel_profile (*get_profile)(struct libinput_device *device);
+	enum libinput_config_accel_profile (*get_default_profile)(struct libinput_device *device);
 };
 
 struct libinput_device_group {
@@ -138,6 +167,8 @@ struct libinput_device {
 		int sysmouse_oldmask;
 		struct kbdev_state *kbdst;
 	};
+	struct motion_filter *filter;
+	struct libinput_device_config config;
 	int fd;
 };
 

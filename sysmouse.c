@@ -30,7 +30,131 @@
 
 #include "libinput.h"
 #include "libinput-util.h"
+#include "filter.h"
 #include "libinput-private.h"
+
+int sysmouse_init_accel(struct libinput_device *device,
+			enum libinput_config_accel_profile which);
+
+static int
+sysmouse_accel_config_available(struct libinput_device *device)
+{
+	return 1;
+}
+
+static enum libinput_config_status
+sysmouse_accel_config_set_speed(struct libinput_device *device, double speed)
+{
+	if (!filter_set_speed(device->filter, speed))
+		return LIBINPUT_CONFIG_STATUS_INVALID;
+
+	return LIBINPUT_CONFIG_STATUS_SUCCESS;
+}
+
+static double
+sysmouse_accel_config_get_speed(struct libinput_device *device)
+{
+	return filter_get_speed(device->filter);
+}
+
+static double
+sysmouse_accel_config_get_default_speed(struct libinput_device *device)
+{
+	return 0.0;
+}
+
+static uint32_t
+sysmouse_accel_config_get_profiles(struct libinput_device *device)
+{
+	if (!device->filter)
+		return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
+
+	return LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE |
+		LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
+}
+
+static enum libinput_config_status
+sysmouse_accel_config_set_profile(struct libinput_device *device,
+				  enum libinput_config_accel_profile profile)
+{
+	struct motion_filter *filter;
+	double speed;
+
+	filter = device->filter;
+	if (filter_get_type(filter) == profile)
+		return LIBINPUT_CONFIG_STATUS_SUCCESS;
+
+	speed = filter_get_speed(filter);
+	device->filter = NULL;
+
+	if (sysmouse_init_accel(device, profile) == 0) {
+		sysmouse_accel_config_set_speed(device, speed);
+		filter_destroy(filter);
+	} else {
+		device->filter = filter;
+	}
+
+	return LIBINPUT_CONFIG_STATUS_SUCCESS;
+}
+
+static enum libinput_config_accel_profile
+sysmouse_accel_config_get_profile(struct libinput_device *device)
+{
+	return filter_get_type(device->filter);
+}
+
+static enum libinput_config_accel_profile
+sysmouse_accel_config_get_default_profile(struct libinput_device *device)
+{
+	if (!device->filter)
+		return LIBINPUT_CONFIG_ACCEL_PROFILE_NONE;
+
+	/* No device has a flat profile as default */
+	return LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+}
+
+static struct libinput_device_config_accel sysmouse_accel = {
+	&sysmouse_accel_config_available,
+	&sysmouse_accel_config_set_speed,
+	&sysmouse_accel_config_get_speed,
+	&sysmouse_accel_config_get_default_speed,
+	&sysmouse_accel_config_get_profiles,
+	&sysmouse_accel_config_set_profile,
+	&sysmouse_accel_config_get_profile,
+	&sysmouse_accel_config_get_default_profile
+};
+
+static int
+sysmouse_device_init_pointer_acceleration(struct libinput_device *device,
+	struct motion_filter *filter)
+{
+	device->filter = filter;
+
+	if (device->config.accel == NULL) {
+		device->config.accel = &sysmouse_accel;
+		sysmouse_accel_config_set_speed(device,
+		    sysmouse_accel_config_get_default_speed(device));
+	}
+
+	return 0;
+}
+
+int
+sysmouse_init_accel(struct libinput_device *device,
+	enum libinput_config_accel_profile which)
+{
+	struct motion_filter *filter;
+
+	if (which == LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT)
+		filter = create_pointer_accelerator_filter_flat(100);
+	else
+		filter = create_pointer_accelerator_filter_linear(100);
+
+	if (!filter)
+		return -1;
+
+	return sysmouse_device_init_pointer_acceleration(device, filter);
+}
 
 static void
 sysmouse_process(struct libinput_device *device, char *pkt)
