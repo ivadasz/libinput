@@ -3148,7 +3148,10 @@ libinput_device_config_send_events_get_default_mode(struct libinput_device *devi
 LIBINPUT_EXPORT int
 libinput_device_config_accel_is_available(struct libinput_device *device)
 {
-	return 0;
+	if (device->kind == SYSMOUSE))
+		return 1;
+	else
+		return 0;
 }
 
 LIBINPUT_EXPORT enum libinput_config_status
