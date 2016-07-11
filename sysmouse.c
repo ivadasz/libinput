@@ -145,6 +145,7 @@ sysmouse_init_accel(struct libinput_device *device,
 {
 	struct motion_filter *filter;
 
+	/* Just use some constant dpi value for sysmouse */
 	if (which == LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT)
 		filter = create_pointer_accelerator_filter_flat(100);
 	else
@@ -160,7 +161,7 @@ static void
 sysmouse_process(struct libinput_device *device, char *pkt)
 {
 	enum libinput_button_state state;
-	struct normalized_coords accel;
+	struct normalized_coords unaccel, accel;
 	struct discrete_coords disc;
 	struct device_float_coords raw;
 	struct timespec ts;
@@ -194,12 +195,29 @@ sysmouse_process(struct libinput_device *device, char *pkt)
 
 	if (xdelta != 0 || ydelta != 0) {
 		memset(&raw, 0, sizeof(raw));
+		memset(&unaccel, 0, sizeof(unaccel));
 		memset(&accel, 0, sizeof(accel));
 
-		accel.x = xdelta;
-		accel.y = ydelta;
+		unaccel.x = xdelta;
+		unaccel.y = ydelta;
 
-		pointer_notify_motion(device, time, &accel, &raw);
+		if (device->filter) {
+			/* Apply pointer acceleration. */
+			accel = filter_dispatch(device->filter,
+						&unaccel,
+						device,
+						time);
+		} else {
+#if 0
+			log_bug_libinput(libinput,
+					 "%s: accel filter missing\n",
+					 device->devname);
+#endif
+			accel = unaccel;
+		}
+
+		if (!normalized_is_zero(accel) || !normalized_is_zero(unaccel))
+			pointer_notify_motion(device, time, &accel, &raw);
 	}
 
 	nm = pkt[0] & 7;
