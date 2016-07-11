@@ -51,9 +51,7 @@ sysmouse_process(struct libinput_device *device, char *pkt)
 	xdelta = pkt[1] + pkt[3];
 	ydelta = pkt[2] + pkt[4];
 	ydelta = -ydelta;
-	zdelta = (pkt[5] > 0 && pkt[6] == 0) ?
-	    (char)(pkt[5] | 0x80) :
-	    pkt[5] + pkt[6];
+	zdelta = ((char)(pkt[5] << 1) + (char)(pkt[6] << 1)) >> 1;
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	time = ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
